@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>// progress.log</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg: #12151b;
+  --panel: #1b1f27;
+  --panel-hi: #222733;
+  --border: #2a2f3a;
+  --text: #eceae4;
+  --muted: #8a8f98;
+  --mint: #6fe3b4;
+  --mint-dim: #3c6b57;
+  --amber: #f5b562;
+  --violet: #a98bf0;
+  --red-ish: #e5707a;
+  --blue: #6fb4e3;
+  --pink: #e38fc0;
+  --radius: 10px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  padding:28px 20px 80px;
+}
+::selection{background:var(--mint-dim); color:var(--text);}
+:focus-visible{outline:2px solid var(--mint); outline-offset:2px;}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+}
+
+.wrap{max-width:1040px; margin:0 auto;}
+
+/* ---------- HERO ---------- */
+.hero{
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, var(--panel-hi), var(--panel));
+  border-radius:var(--radius);
+  padding:24px 26px;
+  margin-bottom:18px;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:"";
+  position:absolute; inset:0;
+  background:repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 32px);
+  pointer-events:none;
+}
+.prompt-line{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:6px;
+  letter-spacing:0.02em;
+}
+.prompt-line .sym{color:var(--mint);}
+.hero-top{
+  display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:18px;
+}
+.streak-num{
+  font-family:'JetBrains Mono',monospace;
+  font-weight:800; font-size:64px; line-height:1;
+  color:var(--amber);
+  text-shadow:0 0 24px rgba(245,181,98,0.25);
+}
+.streak-label{
+  font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:13px;
+  text-transform:uppercase; letter-spacing:0.08em;
+}
+.stat-row{display:flex; gap:26px; flex-wrap:wrap;}
+.stat{font-family:'JetBrains Mono',monospace;}
+.stat .v{font-size:20px; font-weight:700; color:var(--text);}
+.stat .k{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;}
+
+.log-today{
+  margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  border-top:1px solid var(--border); padding-top:18px;
+}
+.btn{
+  font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600;
+  border:1px solid var(--border); background:var(--panel-hi); color:var(--text);
+  padding:9px 16px; border-radius:7px; cursor:pointer;
+  transition:border-color .15s, transform .1s;
+}
+.btn:hover{border-color:var(--mint);}
+.btn:active{transform:scale(0.97);}
+.btn.primary{background:var(--mint); color:#0e1512; border-color:var(--mint);}
+.btn.primary:hover{filter:brightness(1.08);}
+.btn.primary.done{background:var(--mint-dim); color:var(--mint); border-color:var(--mint-dim);}
+.btn.ghost{background:transparent;}
+input[type=text], input[type=number], textarea, select{
+  font-family:'Inter',sans-serif;
+  background:var(--bg); border:1px solid var(--border); color:var(--text);
+  padding:9px 12px; border-radius:7px; font-size:13px;
+}
+input[type=number]{width:80px;}
+input:focus, textarea:focus, select:focus{border-color:var(--mint);}
+.note-input{flex:1; min-width:160px;}
+
+/* ---------- SECTION HEADERS ---------- */
+.section{margin-bottom:18px;}
+.section-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+.section-head h2{
+  font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin:0;
+}
+.section-head h2::before{content:"# "; color:var(--mint);}
+
+.card{border:1px solid var(--border); background:var(--panel); border-radius:var(--radius); padding:20px 22px;}
+
+/* ---------- TWO COL: TIMER + SUMMARY ---------- */
+.two-col{display:grid; grid-template-columns:280px 1fr; gap:14px;}
+@media (max-width:760px){.two-col{grid-template-columns:1fr;}}
+
+/* ---------- POMODORO ---------- */
+.timer-card{text-align:center;}
+.timer-display{
+  font-family:'JetBrains Mono',monospace; font-size:44px; font-weight:800;
+  color:var(--text); margin:6px 0 14px;
+  font-variant-numeric:tabular-nums;
+}
+.timer-controls{display:flex; gap:8px; justify-content:center; flex-wrap:wrap;}
+.timer-presets{display:flex; gap:6px; justify-content:center; margin-top:10px;}
+.preset-btn{
+  font-family:'JetBrains Mono',monospace; font-size:11px; padding:5px 9px;
+  border:1px solid var(--border); background:var(--panel-hi); color:var(--muted);
+  border-radius:6px; cursor:pointer;
+}
+.preset-btn.active{color:var(--mint); border-color:var(--mint);}
+
+/* ---------- SUMMARY ---------- */
+.summary-card p{
+  font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.9; color:var(--text); margin:0;
+}
+.summary-card .hi{color:var(--mint); font-weight:700;}
+.summary-card .hi.amber{color:var(--amber);}
+.summary-card .hi.violet{color:var(--violet);}
+
+/* ---------- HEATMAP ---------- */
+.heatmap-scroll{overflow-x:auto; padding-bottom:6px;}
+.heatmap-grid{display:grid; grid-auto-flow:column; grid-template-rows:repeat(7, 13px); gap:3px; width:max-content;}
+.cell{width:13px; height:13px; border-radius:3px; background:var(--panel-hi); border:1px solid rgba(255,255,255,0.03); transition:transform .1s;}
+.cell:hover{transform:scale(1.3);}
+.cell[data-level="1"]{background:var(--mint-dim);}
+.cell[data-level="2"]{background:#4d9b7e;}
+.cell[data-level="3"]{background:var(--mint);}
+.cell.today{box-shadow:0 0 0 1px var(--amber);}
+.heatmap-legend{display:flex; align-items:center; gap:6px; margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted);}
+.heatmap-legend .cell{width:11px; height:11px;}
+
+/* ---------- WEEK CHART ---------- */
+.week-bars{display:flex; align-items:flex-end; gap:10px; height:110px; margin-top:6px;}
+.week-bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;}
+.week-bar{width:100%; max-width:34px; background:linear-gradient(180deg, var(--mint), var(--mint-dim)); border-radius:5px 5px 3px 3px; min-height:3px; transition:height .3s ease;}
+.week-bar-col .lbl{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted);}
+.week-bar-col .mins{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text);}
+
+/* ---------- PROGRESS TRACKS ---------- */
+.tracks-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:14px;}
+.track-card{display:flex; flex-direction:column;}
+.track-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+.track-card-head h3{
+  font-family:'JetBrains Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.06em;
+  color:var(--accent, var(--mint)); margin:0;
+}
+.cat-del{background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:0 2px;}
+.cat-del:hover{color:var(--red-ish);}
+.item{margin-bottom:12px;}
+.item-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; gap:8px;}
+.item-top .name{font-size:13px; font-weight:500;}
+.item-top .pct{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); white-space:nowrap;}
+.bar-track{height:7px; background:var(--bg); border-radius:4px; overflow:hidden; border:1px solid var(--border);}
+.bar-fill{height:100%; border-radius:4px; transition:width .25s ease;}
+.item-controls{display:flex; gap:4px; margin-top:5px;}
+.mini-btn{
+  width:20px; height:20px; border-radius:5px; border:1px solid var(--border); background:var(--panel-hi);
+  color:var(--muted); cursor:pointer; font-size:12px; line-height:1; display:flex; align-items:center; justify-content:center;
+}
+.mini-btn:hover{color:var(--text); border-color:var(--mint);}
+.mini-btn.del{margin-left:auto; color:var(--red-ish);}
+.add-row{display:flex; gap:6px; margin-top:8px;}
+.add-row input{flex:1; padding:6px 9px; font-size:12px; min-width:0;}
+.add-row button{padding:6px 10px; font-size:11px; flex-shrink:0;}
+.empty{color:var(--muted); font-size:12px; font-style:italic;}
+
+.new-category-card{
+  border:1px dashed var(--border); background:transparent; border-radius:var(--radius);
+  padding:20px 22px; display:flex; flex-direction:column; align-items:stretch; justify-content:center;
+  gap:10px; min-height:120px;
+}
+.new-category-card .lbl{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;}
+.new-category-card .row{display:flex; gap:8px;}
+.new-category-card input{flex:1; min-width:0;}
+
+/* ---------- PROBLEM TRACKER ---------- */
+.problem-form{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center;}
+.problem-form input[type=text]{flex:1; min-width:160px;}
+.diff-tag{
+  font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; padding:3px 8px;
+  border-radius:5px; text-transform:uppercase; letter-spacing:0.04em; white-space:nowrap;
+}
+.diff-tag.Easy{background:rgba(111,227,180,0.15); color:var(--mint);}
+.diff-tag.Medium{background:rgba(245,181,98,0.15); color:var(--amber);}
+.diff-tag.Hard{background:rgba(229,112,122,0.15); color:var(--red-ish);}
+
+.pattern-breakdown{display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
+.pattern-row{display:flex; align-items:center; gap:10px;}
+.pattern-row .p-name{font-family:'JetBrains Mono',monospace; font-size:12px; width:120px; color:var(--muted); flex-shrink:0;}
+.pattern-row .p-track{flex:1; height:6px; background:var(--bg); border-radius:3px; overflow:hidden; border:1px solid var(--border);}
+.pattern-row .p-fill{height:100%; background:var(--violet); border-radius:3px;}
+.pattern-row .p-count{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text); width:20px; text-align:right;}
+
+.problem-list{display:flex; flex-direction:column; gap:0; border-top:1px solid var(--border); max-height:340px; overflow-y:auto;}
+.problem-row{
+  display:flex; align-items:center; gap:12px; padding:10px 4px;
+  border-bottom:1px solid var(--border); font-size:13px;
+}
+.problem-row .p-title{flex:1;}
+.problem-row .p-pattern{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); width:110px;}
+.problem-row .p-date{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); width:80px; text-align:right;}
+.problem-row .del{background:none; border:none; color:var(--red-ish); cursor:pointer; font-size:15px; padding:0 4px;}
+
+footer{text-align:center; color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:11px; margin-top:30px; opacity:0.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="prompt-line"><span class="sym">$</span> whoami --track anything,everything</div>
+    <div class="hero-top">
+      <div>
+        <div class="streak-num" id="streakNum">0</div>
+        <div class="streak-label">day streak</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="v" id="longestStreak">0</div><div class="k">longest</div></div>
+        <div class="stat"><div class="v" id="totalDays">0</div><div class="k">days logged</div></div>
+        <div class="stat"><div class="v" id="totalHours">0h</div><div class="k">total time</div></div>
+        <div class="stat"><div class="v" id="totalProblems">0</div><div class="k">problems solved</div></div>
+      </div>
+    </div>
+
+    <div class="log-today">
+      <button class="btn primary" id="logTodayBtn">mark today done</button>
+      <input type="number" id="minutesInput" placeholder="min" min="0" title="minutes spent today">
+      <input type="text" class="note-input" id="noteInput" placeholder="what did you work on today?">
+      <button class="btn ghost" id="saveNoteBtn">save note</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>focus timer & weekly recap</h2><span class="empty" id="loadingTag"></span></div>
+    <div class="two-col">
+      <div class="card timer-card">
+        <div class="streak-label" style="margin-bottom:2px;">pomodoro</div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-controls">
+          <button class="btn primary" id="timerToggle">start</button>
+          <button class="btn ghost" id="timerReset">reset</button>
+        </div>
+        <div class="timer-presets">
+          <button class="preset-btn active" data-mins="25">25</button>
+          <button class="preset-btn" data-mins="45">45</button>
+          <button class="preset-btn" data-mins="60">60</button>
+        </div>
+      </div>
+      <div class="card summary-card">
+        <div class="streak-label" style="margin-bottom:10px;">this week's recap</div>
+        <p id="summaryText">Loading your week...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>activity log</h2></div>
+    <div class="card">
+      <div class="heatmap-scroll"><div class="heatmap-grid" id="heatmapGrid"></div></div>
+      <div class="heatmap-legend">
+        less
+        <div class="cell" data-level="0"></div>
+        <div class="cell" data-level="1"></div>
+        <div class="cell" data-level="2"></div>
+        <div class="cell" data-level="3"></div>
+        more
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>this week</h2></div>
+    <div class="card"><div class="week-bars" id="weekBars"></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>progress tracks</h2><span class="empty">any subject — create your own category below</span></div>
+    <div class="tracks-grid" id="tracksGrid"></div>
+    <div class="new-category-card" style="margin-top:14px;">
+      <div class="lbl">+ new category</div>
+      <div class="row">
+        <input type="text" id="newCatInput" placeholder="e.g. UI Design, Math, System Design...">
+        <button class="btn primary" id="addCatBtn">create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><h2>problem tracker</h2></div>
+    <div class="card">
+      <div class="problem-form">
+        <input type="text" id="probName" placeholder="problem name (e.g. Two Sum)">
+        <input type="text" id="probPattern" list="patternList" placeholder="pattern / topic (type anything)">
+        <datalist id="patternList"></datalist>
+        <select id="probDiff">
+          <option>Easy</option><option>Medium</option><option>Hard</option>
+        </select>
+        <button class="btn primary" id="addProblemBtn">log problem</button>
+      </div>
+
+      <div class="pattern-breakdown" id="patternBreakdown"></div>
+
+      <div class="problem-list" id="problemList"></div>
+    </div>
+  </div>
+
+  <footer>data saved automatically · stored in this browser</footer>
+</div>
+
+<script>
+const STORE_KEY = 'dashboard-state-v3';
+const COLOR_PALETTE = ['var(--mint)','var(--violet)','var(--amber)','var(--blue)','var(--pink)','var(--red-ish)'];
+const DEFAULT_PATTERNS = ['Arrays','Strings','Hashing','Two Pointers','Sliding Window','Linked List','Trees','Graphs','DP','Greedy','Backtracking'];
+
+let state = {
+  activity: {},
+  categories: [
+    {id:'languages', name:'Languages', color:'var(--mint)', items:[{name:'Python', pct:40},{name:'JavaScript', pct:25}]},
+    {id:'dsa', name:'DSA Topics', color:'var(--violet)', items:[{name:'Arrays & Strings', pct:55},{name:'Trees', pct:20}]},
+    {id:'frameworks', name:'Frameworks', color:'var(--amber)', items:[{name:'React', pct:15}]}
+  ],
+  problems: []
+};
+
+function todayKey(d = new Date()){ return d.toISOString().slice(0,10); }
+function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ---------- persistence ---------- */
+function loadState(){
+  const tag = document.getElementById('loadingTag');
+  tag.textContent = 'loading...';
+  try{
+    const saved = localStorage.getItem(STORE_KEY);
+
+    if(saved){
+      const parsed = JSON.parse(saved);
+      state = Object.assign(state, parsed);
+    } else {
+      // Try migrating from the older v2 key if it exists in localStorage.
+      const oldSaved = localStorage.getItem('dashboard-state-v2');
+      if(oldSaved){
+        const o = JSON.parse(oldSaved);
+        state.activity = o.activity || {};
+        state.problems = o.problems || [];
+        state.categories = [
+          {id:'languages', name:'Languages', color:'var(--mint)', items:o.languages||[]},
+          {id:'dsa', name:'DSA Topics', color:'var(--violet)', items:o.dsa||[]},
+          {id:'frameworks', name:'Frameworks', color:'var(--amber)', items:o.frameworks||[]}
+        ];
+        saveState();
+      }
+    }
+  }catch(e){
+    console.error('could not load saved data:', e);
+  }
+  tag.textContent = '';
+  renderAll();
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.error('save failed:', e);
+  }
+}
+
+/* ---------- streak math ---------- */
+function computeStreaks(){
+  const days = Object.keys(state.activity).filter(k => state.activity[k].done).sort();
+  if(days.length === 0) return {current:0, longest:0, total:0};
+  const daySet = new Set(days);
+  let longest = 1, run = 1;
+  for(let i=1;i<days.length;i++){
+    const diff = (new Date(days[i]) - new Date(days[i-1])) / 86400000;
+    run = diff === 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  }
+  let current = 0;
+  let cursor = new Date();
+  let skippedToday = false;
+  while(true){
+    const key = todayKey(cursor);
+    if(daySet.has(key)){
+      current++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else if(key === todayKey() && !skippedToday){
+      skippedToday = true;
+      cursor.setDate(cursor.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return {current, longest, total: days.length};
+}
+function totalMinutes(){
+  return Object.values(state.activity).reduce((s,a) => s + (a.minutes||0), 0);
+}
+
+/* ---------- heatmap ---------- */
+function renderHeatmap(){
+  const grid = document.getElementById('heatmapGrid');
+  grid.innerHTML = '';
+  const weeks = 20;
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - (weeks*7) + 1);
+  while(start.getDay() !== 0){ start.setDate(start.getDate() - 1); }
+  const cursor = new Date(start);
+  while(cursor <= end){
+    const key = todayKey(cursor);
+    const entry = state.activity[key];
+    let level = 0;
+    if(entry && entry.done){
+      const m = entry.minutes || 0;
+      level = m >= 90 ? 3 : m >= 30 ? 2 : 1;
+    }
+    const div = document.createElement('div');
+    div.className = 'cell' + (key === todayKey() ? ' today' : '');
+    div.dataset.level = level;
+    div.title = key + (level ? ` — ${entry.minutes||0}m` : ' — no activity');
+    grid.appendChild(div);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  requestAnimationFrame(() => { document.querySelector('.heatmap-scroll').scrollLeft = 999999; });
+}
+
+/* ---------- week chart + summary ---------- */
+function getLastNDays(n){
+  const days = [];
+  const cursor = new Date();
+  cursor.setDate(cursor.getDate() - (n-1));
+  for(let i=0;i<n;i++){
+    const key = todayKey(cursor);
+    days.push({key, entry: state.activity[key], label: cursor.toLocaleDateString(undefined,{weekday:'short'})[0]});
+    cursor.setDate(cursor.getDate()+1);
+  }
+  return days;
+}
+function renderWeek(){
+  const el = document.getElementById('weekBars');
+  el.innerHTML = '';
+  const days = getLastNDays(7);
+  const max = Math.max(...days.map(d=>d.entry?d.entry.minutes||0:0), 30);
+  days.forEach(d => {
+    const mins = d.entry ? (d.entry.minutes||0) : 0;
+    const col = document.createElement('div');
+    col.className = 'week-bar-col';
+    const h = Math.max(3, (mins/max)*100);
+    col.innerHTML = `<div class="mins">${mins||''}</div><div class="week-bar" style="height:${h}px"></div><div class="lbl">${d.label}</div>`;
+    el.appendChild(col);
+  });
+}
+function renderSummary(){
+  const days = getLastNDays(7);
+  const activeDays = days.filter(d => d.entry && d.entry.done).length;
+  const mins = days.reduce((s,d) => s + (d.entry ? (d.entry.minutes||0) : 0), 0);
+  const s = computeStreaks();
+
+  const weekProblems = state.problems.filter(p => days.some(d => d.key === p.date));
+  const patternCounts = {};
+  weekProblems.forEach(p => patternCounts[p.pattern] = (patternCounts[p.pattern]||0)+1);
+  const topPattern = Object.keys(patternCounts).sort((a,b)=>patternCounts[b]-patternCounts[a])[0];
+
+  let html = `You logged <span class="hi">${activeDays}/7</span> days this week, `;
+  html += `<span class="hi amber">${mins} minutes</span> total`;
+  if(topPattern){
+    html += `, mostly practicing <span class="hi violet">${escapeHtml(topPattern)}</span> problems`;
+  }
+  html += `. Current streak: <span class="hi">${s.current} day${s.current===1?'':'s'}</span>.`;
+  if(activeDays === 7){
+    html += ` Perfect week — every single day.`;
+  } else if(activeDays === 0){
+    html += ` No sessions logged yet this week — mark today done to get moving.`;
+  } else if(activeDays >= 5){
+    html += ` Strong consistency, keep it up.`;
+  }
+  document.getElementById('summaryText').innerHTML = html;
+}
+
+/* ---------- progress tracks (fully custom categories) ---------- */
+function renderTracks(){
+  const grid = document.getElementById('tracksGrid');
+  grid.innerHTML = '';
+  state.categories.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'card track-card';
+    card.style.setProperty('--accent', cat.color);
+
+    const head = document.createElement('div');
+    head.className = 'track-card-head';
+    head.innerHTML = `<h3>${escapeHtml(cat.name)}</h3>`;
+    const delBtn = document.createElement('button');
+    delBtn.className = 'cat-del';
+    delBtn.textContent = '×';
+    delBtn.title = 'delete this category';
+    delBtn.onclick = () => {
+      state.categories = state.categories.filter(c => c.id !== cat.id);
+      renderTracks();
+      saveState();
+    };
+    head.appendChild(delBtn);
+    card.appendChild(head);
+
+    const itemsWrap = document.createElement('div');
+    if(cat.items.length === 0){
+      itemsWrap.innerHTML = '<div class="empty">nothing added yet</div>';
+    } else {
+      cat.items.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div class="item-top"><span class="name">${escapeHtml(item.name)}</span><span class="pct">${item.pct}%</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${item.pct}%; background:${cat.color}"></div></div>
+          <div class="item-controls">
+            <button class="mini-btn" data-act="dec">−</button>
+            <button class="mini-btn" data-act="inc">+</button>
+            <button class="mini-btn del" data-act="del">×</button>
+          </div>`;
+        div.querySelector('[data-act="inc"]').onclick = () => { item.pct = Math.min(100, item.pct+5); renderTracks(); saveState(); };
+        div.querySelector('[data-act="dec"]').onclick = () => { item.pct = Math.max(0, item.pct-5); renderTracks(); saveState(); };
+        div.querySelector('[data-act="del"]').onclick = () => { cat.items.splice(idx,1); renderTracks(); saveState(); };
+        itemsWrap.appendChild(div);
+      });
+    }
+    card.appendChild(itemsWrap);
+
+    const addRow = document.createElement('div');
+    addRow.className = 'add-row';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = `add to ${cat.name}...`;
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn ghost';
+    addBtn.textContent = 'add';
+    const doAdd = () => {
+      const name = input.value.trim();
+      if(!name) return;
+      cat.items.push({name, pct:0});
+      input.value = '';
+      renderTracks();
+      saveState();
+    };
+    addBtn.onclick = doAdd;
+    input.addEventListener('keydown', e => { if(e.key === 'Enter') doAdd(); });
+    addRow.appendChild(input);
+    addRow.appendChild(addBtn);
+    card.appendChild(addRow);
+
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('addCatBtn').onclick = () => {
+  const input = document.getElementById('newCatInput');
+  const name = input.value.trim();
+  if(!name) return;
+  const color = COLOR_PALETTE[state.categories.length % COLOR_PALETTE.length];
+  state.categories.push({id: genId(), name, color, items: []});
+  input.value = '';
+  renderTracks();
+  saveState();
+};
+document.getElementById('newCatInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter') document.getElementById('addCatBtn').click();
+});
+document.getElementById('probName').addEventListener('keydown', e => {
+  if(e.key === 'Enter') document.getElementById('addProblemBtn').click();
+});
+document.getElementById('probPattern').addEventListener('keydown', e => {
+  if(e.key === 'Enter') document.getElementById('addProblemBtn').click();
+});
+
+/* ---------- problem tracker ---------- */
+function renderPatternList(){
+  const used = state.problems.map(p => p.pattern);
+  const all = Array.from(new Set([...DEFAULT_PATTERNS, ...used])).sort();
+  const dl = document.getElementById('patternList');
+  dl.innerHTML = all.map(p => `<option value="${escapeHtml(p)}">`).join('');
+}
+
+function renderProblems(){
+  document.getElementById('totalProblems').textContent = state.problems.length;
+  renderPatternList();
+
+  const counts = {};
+  state.problems.forEach(p => counts[p.pattern] = (counts[p.pattern]||0)+1);
+  const maxCount = Math.max(1, ...Object.values(counts));
+  const breakdown = document.getElementById('patternBreakdown');
+  breakdown.innerHTML = '';
+  Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).forEach(pattern => {
+    const row = document.createElement('div');
+    row.className = 'pattern-row';
+    row.innerHTML = `
+      <div class="p-name">${escapeHtml(pattern)}</div>
+      <div class="p-track"><div class="p-fill" style="width:${(counts[pattern]/maxCount)*100}%"></div></div>
+      <div class="p-count">${counts[pattern]}</div>`;
+    breakdown.appendChild(row);
+  });
+
+  const list = document.getElementById('problemList');
+  list.innerHTML = '';
+  if(state.problems.length === 0){
+    list.innerHTML = '<div class="empty" style="padding:10px 4px;">no problems logged yet</div>';
+    return;
+  }
+  [...state.problems].sort((a,b) => b.date.localeCompare(a.date)).forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'problem-row';
+    row.innerHTML = `
+      <span class="diff-tag ${p.difficulty}">${p.difficulty}</span>
+      <span class="p-title">${escapeHtml(p.name)}</span>
+      <span class="p-pattern">${escapeHtml(p.pattern)}</span>
+      <span class="p-date">${p.date.slice(5)}</span>
+      <button class="del" title="remove">×</button>`;
+    row.querySelector('.del').onclick = () => {
+      state.problems = state.problems.filter(x => x.id !== p.id);
+      renderProblems();
+      renderSummary();
+      saveState();
+    };
+    list.appendChild(row);
+  });
+}
+document.getElementById('addProblemBtn').onclick = () => {
+  const nameInput = document.getElementById('probName');
+  const patternInput = document.getElementById('probPattern');
+  const name = nameInput.value.trim();
+  if(!name) return;
+  const pattern = patternInput.value.trim() || 'Other';
+  state.problems.push({
+    id: genId(),
+    name,
+    pattern,
+    difficulty: document.getElementById('probDiff').value,
+    date: todayKey()
+  });
+  nameInput.value = '';
+  patternInput.value = '';
+  renderProblems();
+  renderSummary();
+  saveState();
+};
+
+/* ---------- logging today ---------- */
+function renderTodayButton(){
+  const btn = document.getElementById('logTodayBtn');
+  const key = todayKey();
+  const done = state.activity[key] && state.activity[key].done;
+  btn.textContent = done ? '✓ logged today' : 'mark today done';
+  btn.classList.toggle('done', !!done);
+}
+document.getElementById('logTodayBtn').onclick = () => {
+  const key = todayKey();
+  const minutes = parseInt(document.getElementById('minutesInput').value) || (state.activity[key]?.minutes || 25);
+  const existing = state.activity[key] || {};
+  state.activity[key] = { done: true, minutes: existing.minutes || minutes, note: existing.note || '' };
+  renderAll(); saveState();
+};
+document.getElementById('saveNoteBtn').onclick = () => {
+  const key = todayKey();
+  const note = document.getElementById('noteInput').value.trim();
+  const minutes = parseInt(document.getElementById('minutesInput').value) || 0;
+  const existing = state.activity[key] || {};
+  state.activity[key] = {
+    done: existing.done || minutes > 0,
+    minutes: minutes || existing.minutes || 0,
+    note: note || existing.note || ''
+  };
+  document.getElementById('noteInput').value = '';
+  renderAll(); saveState();
+};
+
+/* ---------- pomodoro timer ---------- */
+let timerSeconds = 25*60;
+let timerTotal = 25*60;
+let timerInterval = null;
+let timerRunning = false;
+
+function formatTime(s){
+  const m = Math.floor(s/60).toString().padStart(2,'0');
+  const sec = (s%60).toString().padStart(2,'0');
+  return `${m}:${sec}`;
+}
+function renderTimer(){
+  document.getElementById('timerDisplay').textContent = formatTime(timerSeconds);
+}
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.onclick = () => {
+    if(timerRunning) return;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mins = parseInt(btn.dataset.mins);
+    timerSeconds = mins*60;
+    timerTotal = mins*60;
+    renderTimer();
+  };
+});
+document.getElementById('timerToggle').onclick = () => {
+  const toggleBtn = document.getElementById('timerToggle');
+  if(timerRunning){
+    clearInterval(timerInterval);
+    timerRunning = false;
+    toggleBtn.textContent = 'start';
+    logTimerMinutes();
+  } else {
+    timerRunning = true;
+    toggleBtn.textContent = 'pause';
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      renderTimer();
+      if(timerSeconds <= 0){
+        clearInterval(timerInterval);
+        timerRunning = false;
+        toggleBtn.textContent = 'start';
+        logTimerMinutes(true);
+        timerSeconds = timerTotal;
+        renderTimer();
+      }
+    }, 1000);
+  }
+};
+document.getElementById('timerReset').onclick = () => {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  document.getElementById('timerToggle').textContent = 'start';
+  timerSeconds = timerTotal;
+  renderTimer();
+};
+function logTimerMinutes(){
+  const elapsedSeconds = timerTotal - timerSeconds;
+  const mins = Math.round(elapsedSeconds/60);
+  if(mins < 1) return;
+  const key = todayKey();
+  const existing = state.activity[key] || {};
+  state.activity[key] = {
+    done: true,
+    minutes: (existing.minutes||0) + mins,
+    note: existing.note || ''
+  };
+  renderAll();
+  saveState();
+}
+renderTimer();
+
+/* ---------- render all ---------- */
+function renderAll(){
+  const s = computeStreaks();
+  document.getElementById('streakNum').textContent = s.current;
+  document.getElementById('longestStreak').textContent = s.longest;
+  document.getElementById('totalDays').textContent = s.total;
+  document.getElementById('totalHours').textContent = (totalMinutes()/60).toFixed(1) + 'h';
+  renderHeatmap();
+  renderWeek();
+  renderSummary();
+  renderTracks();
+  renderProblems();
+  renderTodayButton();
+}
+
+loadState();
+</script>
+</body>
+</html>
